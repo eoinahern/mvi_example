@@ -2,22 +2,42 @@ package com.raywenderlich.android.creaturemon.allcreatures
 
 import androidx.lifecycle.ViewModel
 import com.raywenderlich.android.creaturemon.mvibase.MviViewModel
-import com.raywenderlich.android.creaturemon.mvibase.MviViewState
 import io.reactivex.Observable
 import com.raywenderlich.android.creaturemon.allcreatures.AllCreaturesResult.*
+import com.raywenderlich.android.creaturemon.util.notOfType
+import io.reactivex.ObservableTransformer
+import io.reactivex.subjects.PublishSubject
 import java.util.function.BiFunction
 
 class AllCreaturesViewModel(val actionProcessorHolder: AllCreaturesProcessorHolder) : ViewModel(), MviViewModel<AllCreaturesIntent, AllCreaturesViewState> {
 
 
+	private val intentsSubject: PublishSubject<AllCreaturesIntent> = PublishSubject.create()
+	private val statesObservale: Observable<AllCreaturesViewState> = compose()
+
 	override fun processIntents(intents: Observable<AllCreaturesIntent>) {
-		TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+		intents.subscribe(intentsSubject)
 	}
 
-	override fun states(): Observable<AllCreaturesViewState> {
-		TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+	private val loadingIntentFilter = ObservableTransformer<AllCreaturesIntent, AllCreaturesIntent> { intent ->
+		intent.publish { shared ->
+			Observable.merge(shared.ofType(AllCreaturesIntent.LoadAllCreatures::class.java).take(1),
+					shared.notOfType(AllCreaturesIntent.LoadAllCreatures::class.java))
+		}
 	}
 
+	private fun compose(): Observable<AllCreaturesViewState> {
+
+	}
+
+	private fun createActionFromIntent(intent: AllCreaturesIntent): AllCreaturesAction = when (intent) {
+		is AllCreaturesIntent.LoadAllCreatures -> {
+			AllCreaturesAction.LoadAllCreaturesAction
+		}
+		is AllCreaturesIntent.ClearAllCreatures -> AllCreaturesAction.ClearAllCreaturesAction
+	}
+
+	override fun states(): Observable<AllCreaturesViewState> = statesObservale
 
 	companion object {
 		private val reducer = BiFunction { previousViewState: AllCreaturesViewState, result: AllCreaturesResult ->
