@@ -6,17 +6,27 @@ import com.raywenderlich.android.creaturemon.mvibase.MviViewModel
 import com.raywenderlich.android.creaturemon.addcreature.AddCreatureResult.*
 import com.raywenderlich.android.creaturemon.data.model.CreatureAttributes
 import io.reactivex.Observable
+import io.reactivex.subjects.PublishSubject
 import java.util.function.BiFunction
 
 class AddCreatureViewModel() : ViewModel(), MviViewModel<AddCreatureIntent, AddCreatureViewState> {
 
 
+	private val intentsSubject: PublishSubject<AddCreatureIntent> = PublishSubject.create()
+	private val statesObservable: Observable<AddCreatureViewState> = compose()
+
+
 	override fun processIntents(intents: Observable<AddCreatureIntent>) {
-		TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
 	}
 
 	override fun states(): Observable<AddCreatureViewState> {
-		TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
+	}
+
+
+	fun compose(): Observable<AddCreatureViewState> {
+
 	}
 
 	companion object {

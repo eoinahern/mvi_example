@@ -8,7 +8,7 @@ data class AllCreaturesViewState(val isLoading: Boolean,
 								 val error: Throwable?) : MviViewState {
 
 	companion object {
-		fun idle(): MviViewState = AllCreaturesViewState(isLoading = false,
+		fun idle(): AllCreaturesViewState = AllCreaturesViewState(isLoading = false,
 				creatures = emptyList(), error = null)
 	}
 

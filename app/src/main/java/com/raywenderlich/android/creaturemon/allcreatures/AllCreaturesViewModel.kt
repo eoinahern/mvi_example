@@ -6,14 +6,14 @@ import io.reactivex.Observable
 import com.raywenderlich.android.creaturemon.allcreatures.AllCreaturesResult.*
 import com.raywenderlich.android.creaturemon.util.notOfType
 import io.reactivex.ObservableTransformer
+import io.reactivex.functions.BiFunction
 import io.reactivex.subjects.PublishSubject
-import java.util.function.BiFunction
 
 class AllCreaturesViewModel(val actionProcessorHolder: AllCreaturesProcessorHolder) : ViewModel(), MviViewModel<AllCreaturesIntent, AllCreaturesViewState> {
 
 
 	private val intentsSubject: PublishSubject<AllCreaturesIntent> = PublishSubject.create()
-	private val statesObservale: Observable<AllCreaturesViewState> = compose()
+	private val statesObservale: Observable<AllCreaturesViewState> = this.compose()
 
 	override fun processIntents(intents: Observable<AllCreaturesIntent>) {
 		intents.subscribe(intentsSubject)
@@ -27,7 +27,15 @@ class AllCreaturesViewModel(val actionProcessorHolder: AllCreaturesProcessorHold
 	}
 
 	private fun compose(): Observable<AllCreaturesViewState> {
-
+		return intentsSubject.compose(loadingIntentFilter)
+				.map { intent ->
+					createActionFromIntent(intent)
+				}
+				.compose(actionProcessorHolder.actionProcessor)
+				.scan(AllCreaturesViewState.idle(), reducer)
+				.distinctUntilChanged()
+				.replay(1)
+				.autoConnect(0)
 	}
 
 	private fun createActionFromIntent(intent: AllCreaturesIntent): AllCreaturesAction = when (intent) {

@@ -12,7 +12,7 @@ class AllCreaturesProcessorHolder(private val creatureRepository: CreatureReposi
 								  private val schedulerProvider: BaseSchedulerProvider) {
 
 
-	private val loadAllCreaturesProcessor: ObservableTransformer<LoadCreaturesAction,
+	private val loadAllCreaturesProcessor: ObservableTransformer<LoadAllCreaturesAction,
 			LoadAllCreaturesResult> = ObservableTransformer {
 		it.flatMap {
 			creatureRepository.getAllCreatures()
@@ -45,10 +45,10 @@ class AllCreaturesProcessorHolder(private val creatureRepository: CreatureReposi
 	internal var actionProcessor = ObservableTransformer<AllCreaturesAction, AllCreaturesResult> { action ->
 		action.publish { shared ->
 			Observable.merge(
-					shared.ofType(LoadCreaturesAction::class.java).compose(loadAllCreaturesProcessor),
+					shared.ofType(LoadAllCreaturesAction::class.java).compose(loadAllCreaturesProcessor),
 					shared.ofType(ClearAllCreaturesAction::class.java).compose(clearAllCreaturesProcessor)
 			).mergeWith(shared.filter { v ->
-				v !is LoadCreaturesAction || v !is ClearAllCreaturesAction
+				v !is LoadAllCreaturesAction || v !is ClearAllCreaturesAction
 			}.flatMap { m -> Observable.error<AllCreaturesResult>(IllegalArgumentException("gay creature res $m")) })
 		}
 	}
