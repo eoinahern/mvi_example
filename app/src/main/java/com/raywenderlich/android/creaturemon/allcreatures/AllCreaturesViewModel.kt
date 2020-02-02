@@ -9,21 +9,21 @@ import io.reactivex.ObservableTransformer
 import io.reactivex.functions.BiFunction
 import io.reactivex.subjects.PublishSubject
 
-class AllCreaturesViewModel(val actionProcessorHolder: AllCreaturesProcessorHolder) : ViewModel(), MviViewModel<AllCreaturesIntent, AllCreaturesViewState> {
+class AllCreaturesViewModel(private val actionProcessorHolder: AllCreaturesProcessorHolder) : ViewModel(), MviViewModel<AllCreaturesIntent, AllCreaturesViewState> {
 
 
 	private val intentsSubject: PublishSubject<AllCreaturesIntent> = PublishSubject.create()
-	private val statesObservale: Observable<AllCreaturesViewState> = this.compose()
+	private val statesObservale: Observable<AllCreaturesViewState> = compose()
+	private val loadingIntentFilter: ObservableTransformer<AllCreaturesIntent, AllCreaturesIntent>
+		get() = ObservableTransformer { intents ->
+			intents.publish { shared ->
+				Observable.merge(shared.ofType(AllCreaturesIntent.LoadAllCreatures::class.java).take(1),
+						shared.notOfType(AllCreaturesIntent.LoadAllCreatures::class.java))
+			}
+		}
 
 	override fun processIntents(intents: Observable<AllCreaturesIntent>) {
 		intents.subscribe(intentsSubject)
-	}
-
-	private val loadingIntentFilter = ObservableTransformer<AllCreaturesIntent, AllCreaturesIntent> { intent ->
-		intent.publish { shared ->
-			Observable.merge(shared.ofType(AllCreaturesIntent.LoadAllCreatures::class.java).take(1),
-					shared.notOfType(AllCreaturesIntent.LoadAllCreatures::class.java))
-		}
 	}
 
 	private fun compose(): Observable<AllCreaturesViewState> {

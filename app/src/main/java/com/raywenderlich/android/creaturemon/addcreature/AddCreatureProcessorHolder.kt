@@ -8,13 +8,14 @@ import com.raywenderlich.android.creaturemon.addcreature.AddCreatureAction.*
 import com.raywenderlich.android.creaturemon.addcreature.AddCreatureResult.*
 import com.raywenderlich.android.creaturemon.data.model.AttributeStore
 import com.raywenderlich.android.creaturemon.data.model.CreatureAttributes
+import com.raywenderlich.android.creaturemon.util.schedulers.BaseSchedulerProvider
 import io.reactivex.Observable
 import java.lang.IllegalArgumentException
 
 
 class AddCreatureProcessorHolder(private val creatureRepo: CreatureRepository,
 								 private val creatureGenerator: CreatureGenerator,
-								 private val schedulerProvider: SchedulerProvider) {
+								 private val schedulerProvider: BaseSchedulerProvider) {
 
 	private val avatarProcessor = ObservableTransformer<AvatarAction, AvatarResult> { actions ->
 		actions.map { avatar ->

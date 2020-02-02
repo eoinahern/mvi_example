@@ -6,27 +6,41 @@ import com.raywenderlich.android.creaturemon.mvibase.MviViewModel
 import com.raywenderlich.android.creaturemon.addcreature.AddCreatureResult.*
 import com.raywenderlich.android.creaturemon.data.model.CreatureAttributes
 import io.reactivex.Observable
+import io.reactivex.functions.BiFunction
 import io.reactivex.subjects.PublishSubject
-import java.util.function.BiFunction
 
-class AddCreatureViewModel() : ViewModel(), MviViewModel<AddCreatureIntent, AddCreatureViewState> {
-
+class AddCreatureViewModel(val actionsProcessorHolder: AddCreatureProcessorHolder) : ViewModel(), MviViewModel<AddCreatureIntent, AddCreatureViewState> {
 
 	private val intentsSubject: PublishSubject<AddCreatureIntent> = PublishSubject.create()
 	private val statesObservable: Observable<AddCreatureViewState> = compose()
 
 
 	override fun processIntents(intents: Observable<AddCreatureIntent>) {
-
+		intents.subscribe(intentsSubject)
 	}
 
-	override fun states(): Observable<AddCreatureViewState> {
+	override fun states(): Observable<AddCreatureViewState> = statesObservable
 
+	private fun getActionFromIntent(intent: AddCreatureIntent): AddCreatureAction {
+		return when (intent) {
+			is AddCreatureIntent.AvatarIntent -> AddCreatureAction.AvatarAction(intent.drawable)
+			is AddCreatureIntent.NameIntent -> AddCreatureAction.NameAction(intent.name)
+			is AddCreatureIntent.IntelligenceIntent -> AddCreatureAction.IntelligenceAction(intent.intelligence)
+			is AddCreatureIntent.EnduranceIntent -> AddCreatureAction.EnduranceAction(intent.endurance)
+			is AddCreatureIntent.StrengthIntent -> AddCreatureAction.StrengthAction(intent.strength)
+			is AddCreatureIntent.SaveIntent -> AddCreatureAction.SaveAction(intent.drawable, intent.name,
+					intent.intelligence, intent.strength, intent.endurance)
+		}
 	}
 
-
-	fun compose(): Observable<AddCreatureViewState> {
-
+	private fun compose(): Observable<AddCreatureViewState> {
+		return intentsSubject.map { intent ->
+			getActionFromIntent(intent)
+		}.compose(actionsProcessorHolder.actionProcessor)
+				.scan(AddCreatureViewState.default(), reducer)
+				.distinctUntilChanged()
+				.replay(1)
+				.autoConnect(0)
 	}
 
 	companion object {

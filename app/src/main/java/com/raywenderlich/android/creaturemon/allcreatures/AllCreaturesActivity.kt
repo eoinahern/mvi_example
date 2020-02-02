@@ -36,40 +36,106 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
+import androidx.lifecycle.ViewModelProviders
 import com.raywenderlich.android.creaturemon.R
 import com.raywenderlich.android.creaturemon.addcreature.CreatureActivity
+import com.raywenderlich.android.creaturemon.mvibase.MviView
+import com.raywenderlich.android.creaturemon.util.CreaturemonViewModelFactory
+import com.raywenderlich.android.creaturemon.util.visible
+import io.reactivex.Observable
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.subjects.PublishSubject
 import kotlinx.android.synthetic.main.activity_all_creatures.*
 import kotlinx.android.synthetic.main.content_all_creatures.*
 
-class AllCreaturesActivity : AppCompatActivity() {
+class AllCreaturesActivity : AppCompatActivity(), MviView<AllCreaturesIntent, AllCreaturesViewState> {
 
-  private val adapter = CreatureAdapter(mutableListOf())
+	private val adapter = CreatureAdapter(mutableListOf())
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_all_creatures)
-    setSupportActionBar(toolbar)
+	private val clearAllPublisher = PublishSubject.create<AllCreaturesIntent
+	.ClearAllCreatures>()
 
-    creaturesRecyclerView.layoutManager = LinearLayoutManager(this)
-    creaturesRecyclerView.adapter = adapter
+	private val disposables = CompositeDisposable()
 
-    fab.setOnClickListener {
-      startActivity(Intent(this, CreatureActivity::class.java))
-    }
-  }
+	private val viewModel: AllCreaturesViewModel by lazy(LazyThreadSafetyMode.NONE) {
+		ViewModelProviders.of(this, CreaturemonViewModelFactory()).get(AllCreaturesViewModel::class.java)
+	}
 
-  override fun onCreateOptionsMenu(menu: Menu): Boolean {
-    // Inflate the menu; this adds items to the action bar if it is present.
-    menuInflater.inflate(R.menu.menu_main, menu)
-    return true
-  }
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		setContentView(R.layout.activity_all_creatures)
 
-  override fun onOptionsItemSelected(item: MenuItem): Boolean {
-    return when (item.itemId) {
-      R.id.action_clear_all -> {
-        true
-      }
-      else -> super.onOptionsItemSelected(item)
-    }
-  }
+		setSupportActionBar(toolbar)
+
+		creaturesRecyclerView.layoutManager = LinearLayoutManager(this)
+		creaturesRecyclerView.adapter = adapter
+
+		fab.setOnClickListener {
+			startActivity(Intent(this, CreatureActivity::class.java))
+		}
+	}
+
+	override fun onStart() {
+		super.onStart()
+		bind()
+	}
+
+	override fun onStop() {
+		super.onStop()
+		disposables.clear()
+	}
+
+	private fun bind() {
+		disposables.add(viewModel.states().subscribe { viewState -> render(viewState) })
+		viewModel.processIntents(intents())
+	}
+
+	override fun onCreateOptionsMenu(menu: Menu): Boolean {
+		menuInflater.inflate(R.menu.menu_main, menu)
+		return true
+	}
+
+	override fun onOptionsItemSelected(item: MenuItem): Boolean {
+		return when (item.itemId) {
+			R.id.action_clear_all -> {
+				clearAllPublisher.onNext(AllCreaturesIntent.ClearAllCreatures)
+				true
+			}
+			else -> super.onOptionsItemSelected(item)
+		}
+	}
+
+	private fun loadIntentObs() = Observable.just(AllCreaturesIntent.LoadAllCreatures)
+
+	private fun clearIntent(): Observable<AllCreaturesIntent.ClearAllCreatures> = clearAllPublisher
+
+	companion object {
+		private const val TAG = "AllCreaturesActivity"
+	}
+
+	override fun intents(): Observable<AllCreaturesIntent> {
+		return Observable.merge(
+				loadIntentObs(),
+				clearIntent()
+		)
+	}
+
+	override fun render(state: AllCreaturesViewState) {
+		progressbar.visible = state.isLoading
+
+
+		if (state.creatures.isEmpty()) {
+			creaturesRecyclerView.visible = false
+			emptyState.visible = true
+		} else {
+			creaturesRecyclerView.visible = true
+			emptyState.visible = false
+			adapter.updateCreatures(state.creatures)
+		}
+
+		if (state.error != null) {
+			Toast.makeText(this, "Loading error", Toast.LENGTH_LONG).show()
+		}
+	}
 }

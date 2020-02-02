@@ -22,7 +22,6 @@ class AllCreaturesProcessorHolder(private val creatureRepository: CreatureReposi
 					.subscribeOn(schedulerProvider.io())
 					.observeOn(schedulerProvider.ui())
 					.startWith(LoadAllCreaturesResult.Loading)
-
 		}
 	}
 
@@ -42,15 +41,23 @@ class AllCreaturesProcessorHolder(private val creatureRepository: CreatureReposi
 				}
 			}
 
-	internal var actionProcessor = ObservableTransformer<AllCreaturesAction, AllCreaturesResult> { action ->
-		action.publish { shared ->
-			Observable.merge(
-					shared.ofType(LoadAllCreaturesAction::class.java).compose(loadAllCreaturesProcessor),
-					shared.ofType(ClearAllCreaturesAction::class.java).compose(clearAllCreaturesProcessor)
-			).mergeWith(shared.filter { v ->
-				v !is LoadAllCreaturesAction || v !is ClearAllCreaturesAction
-			}.flatMap { m -> Observable.error<AllCreaturesResult>(IllegalArgumentException("gay creature res $m")) })
-		}
-	}
+	internal var actionProcessor =
+			ObservableTransformer<AllCreaturesAction, AllCreaturesResult> { actions ->
+				actions.publish { shared ->
+					Observable.merge(
+							shared.ofType(LoadAllCreaturesAction::class.java).compose(loadAllCreaturesProcessor),
+							shared.ofType(ClearAllCreaturesAction::class.java).compose(clearAllCreaturesProcessor))
+							.mergeWith(
+									// Error for not implemented actions
+									shared.filter { v ->
+										v !is LoadAllCreaturesAction
+												&& v !is ClearAllCreaturesAction
+									}.flatMap { w ->
+										Observable.error<AllCreaturesResult>(
+												IllegalArgumentException("Unknown Action type: $w"))
+									}
+							)
+				}
+			}
 }
 

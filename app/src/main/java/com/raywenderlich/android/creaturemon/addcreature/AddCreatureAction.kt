@@ -5,7 +5,6 @@ import com.raywenderlich.android.creaturemon.mvibase.MviAction
 
 sealed class AddCreatureAction : MviAction {
 
-
 	data class AvatarAction(val drawable: Int) : AddCreatureAction()
 	data class NameAction(val name: String) : AddCreatureAction()
 	data class IntelligenceAction(val intelligenceIndex: Int) : AddCreatureAction()
